@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 import os
-
-path = path = 'C:\\Users\\kyria\\Desktop\\Image-Segmentation\\Segmented-images'
-
+from os import listdir
+from os.path import isfile, join
+path = 'C:\\Users\\kyria\\Desktop\\Image-Segmentation\\Segmented-images'
+binpath = 'C:\\Users\\kyria\\Desktop\\Image-Segmentation\\JustBinarisedImages'
 
 def preprocess_image(image_path):
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -51,15 +52,17 @@ def segment_text(image, bounding_boxes):
                 segmented_text.append(segment[y_c:y_c+h_c, x_c:x_c+w_c])
     
     return segmented_text, new_bounding_boxes
+onlyfiles = [f for f in listdir(binpath) if isfile(join(binpath, f))]
+for file in onlyfiles:
+    binary_image = preprocess_image(os.path.join("image-data" , file))
+    localized_image, bounding_boxes = localize_text(binary_image)
+    segmented_text, new_bounding_boxes = segment_text(binary_image, bounding_boxes)
 
-binary_image = preprocess_image('image-data/P21-Fg006-R-C01-R01-binarized.jpg')
-localized_image, bounding_boxes = localize_text(binary_image)
-segmented_text, new_bounding_boxes = segment_text(binary_image, bounding_boxes)
+    #cv2.imshow('Localized Image with New Bounding Boxes', localized_image) #uncomment to show the image
+    #cv2.waitKey(0) 
+    #cv2.destroyAllWindows()
 
-cv2.imshow('Localized Image with New Bounding Boxes', localized_image)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
-for i, (x, y, w, h) in enumerate(new_bounding_boxes):
-    segment = segmented_text[i]
-    cv2.imwrite(os.path.join(path , f'segment_{i}_with_bounding_box.png'),segment)
+    for i, (x, y, w, h) in enumerate(new_bounding_boxes):
+        segment = segmented_text[i]
+        cv2.imwrite(os.path.join(path , f'image_{file.replace(".jpg", "")}_segment_{i}_with_bounding_box.png'),segment)
+        #clean up might be needed after changing paths and amount of segments (less segments means old ones stay same with images)
