@@ -1,5 +1,9 @@
 import cv2
 import numpy as np
+import os
+
+path = 'C:Users/kyria/Desktop/Image Segmentation/Segmented-images"
+
 
 def preprocess_image(image_path):
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -31,7 +35,7 @@ def segment_text(image, bounding_boxes):
     for (x, y, w, h) in bounding_boxes:
         segment = image[y:y+h, x:x+w]
         
-        # Additional morphological operations
+        # Additional morphological operations to enhance segmentation
         kernel = np.ones((3, 3), np.uint8)
         segment = cv2.morphologyEx(segment, cv2.MORPH_CLOSE, kernel)
         
@@ -48,63 +52,14 @@ def segment_text(image, bounding_boxes):
     
     return segmented_text, new_bounding_boxes
 
-def separate_connected_lines(segmented_text):
-    separated_text = []
-    
-    for segment in segmented_text:
-        # Calculate horizontal and vertical projections
-        horizontal_projection = np.sum(segment, axis=1)
-        vertical_projection = np.sum(segment, axis=0)
-        
-        # Convert projections to UMat
-        horizontal_projection_um = cv2.UMat(np.expand_dims(horizontal_projection, axis=1).astype(np.float32), copyData=True, ranges=cv2.ACCESS_READ)
-        vertical_projection_um = cv2.UMat(np.expand_dims(vertical_projection, axis=0).astype(np.float32), copyData=True, ranges=cv2.ACCESS_READ)
-        
-        # Detect long lines based on projections
-        _, _, _, max_loc_h = cv2.minMaxLoc(horizontal_projection_um)
-        _, _, _, max_loc_v = cv2.minMaxLoc(vertical_projection_um)
-        
-        # Separate long lines by analyzing projections
-        start_h, end_h = find_line_bounds(horizontal_projection)
-        start_v, end_v = find_line_bounds(vertical_projection)
-        
-        # Apply segmentation based on the bounds
-        if end_h - start_h > 10:
-            for i in range(start_h, end_h):
-                sub_segment = segment[i:i+1, start_v:end_v]
-                separated_text.append(sub_segment)
-        else:
-            separated_text.append(segment)
-            
-    return separated_text
-
-def find_line_bounds(projection):
-    start = 0
-    end = len(projection)
-    
-    # Find start index
-    for i in range(len(projection)):
-        if projection[i] > 0:
-            start = i
-            break
-    
-    # Find end index
-    for i in range(len(projection)-1, start, -1):
-        if projection[i] > 0:
-            end = i
-            break
-            
-    return start, end
-
 binary_image = preprocess_image('image-data/P21-Fg006-R-C01-R01-binarized.jpg')
 localized_image, bounding_boxes = localize_text(binary_image)
 segmented_text, new_bounding_boxes = segment_text(binary_image, bounding_boxes)
-separated_text = separate_connected_lines(segmented_text)
-
-for i, segment in enumerate(separated_text):
-    cv2.imshow(f'Separated Character {i}', segment)
-    cv2.imwrite(f'separated_segment_{i}.png', segment)
 
 cv2.imshow('Localized Image with New Bounding Boxes', localized_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+for i, (x, y, w, h) in enumerate(new_bounding_boxes):
+    segment = segmented_text[i]
+    cv2.imwrite(f'segment_{i}_with_bounding_box.png', segment)
