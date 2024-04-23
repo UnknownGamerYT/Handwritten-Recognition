@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 
-path = 'C:Users/kyria/Desktop/Image Segmentation/Segmented-images"
+path = path = 'C:\\Users\\kyria\\Desktop\\Image-Segmentation\\Segmented-images'
 
 
 def preprocess_image(image_path):
@@ -62,4 +62,4 @@ cv2.destroyAllWindows()
 
 for i, (x, y, w, h) in enumerate(new_bounding_boxes):
     segment = segmented_text[i]
-    cv2.imwrite(f'segment_{i}_with_bounding_box.png', segment)
+    cv2.imwrite(os.path.join(path , f'segment_{i}_with_bounding_box.png'),segment)
