@@ -13,6 +13,26 @@ def preprocess_image(image_path):
     binary_image = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     return binary_image
 
+def masked_iamge(image_path):
+    img = cv2.imread(image_path)
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    ret, thresh2 = cv2.threshold(img_gray, 150, 255, cv2.THRESH_BINARY_INV)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (150,2))
+    mask = cv2.morphologyEx(thresh2, cv2.MORPH_CLOSE, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    bboxes = []
+    bboxes_img = img.copy()
+    contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    for cntr in contours:
+        x,y,w,h = cv2.boundingRect(cntr)
+        cv2.rectangle(bboxes_img, (x, y), (x+w, y+h), (0,0,255), 1)
+        bboxes.append((x,y,w,h))
+    #cv2.imshow('Localized Image with New Bounding Boxes', bboxes_img) #uncomment to show the image
+    #cv2.waitKey(0) 
+    #cv2.destroyAllWindows()
+    return bboxes_img
+
 def localize_text(binary_image):
     contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     localized_image = cv2.cvtColor(binary_image, cv2.COLOR_GRAY2BGR)
@@ -62,6 +82,8 @@ for file in onlyfiles:
     #cv2.waitKey(0) 
     #cv2.destroyAllWindows()
     cv2.imwrite(os.path.join(path , f'image_{file.replace(".jpg", "")}_with_bounding_boxes.png'),localized_image)
+    cv2.imwrite(os.path.join(path , f'image_{file.replace(".jpg", "")}_with_bounding_lines.png'),masked_iamge(os.path.join("image-data" , file)))
+    
     for i, (x, y, w, h) in enumerate(new_bounding_boxes):
         segment = segmented_text[i]
         cv2.imwrite(os.path.join(path , f'image_{file.replace(".jpg", "")}_segment_{i}_with_bounding_box.png'),segment)
