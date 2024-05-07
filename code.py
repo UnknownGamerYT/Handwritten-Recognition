@@ -61,7 +61,7 @@ for file in onlyfiles:
     #cv2.imshow('Localized Image with New Bounding Boxes', localized_image) #uncomment to show the image
     #cv2.waitKey(0) 
     #cv2.destroyAllWindows()
-
+    cv2.imwrite(os.path.join(path , f'image_{file.replace(".jpg", "")}_with_bounding_boxes.png'),localized_image)
     for i, (x, y, w, h) in enumerate(new_bounding_boxes):
         segment = segmented_text[i]
         cv2.imwrite(os.path.join(path , f'image_{file.replace(".jpg", "")}_segment_{i}_with_bounding_box.png'),segment)
