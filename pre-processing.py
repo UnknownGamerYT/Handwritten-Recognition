@@ -85,5 +85,5 @@ for i, kernel in enumerate(kernels):
     closed_img = cv2.morphologyEx(inverted_img, cv2.MORPH_CLOSE, kernel)
     cv2.imwrite(f'{output_dir}/Closing_Image_{i}.jpg', closed_img)
 
-# It seemed like Closing produced the cleanest outputs.
+# It seemed like closing produced the cleanest outputs.
 # Specifically, the closing morphological operation with a "big" ellptical structuring element.
