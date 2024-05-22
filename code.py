@@ -10,8 +10,16 @@ def preprocess_image(image_path):
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
     grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred_image = cv2.GaussianBlur(grayscale_image, (5, 5), 0)
-    binary_image = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-    return binary_image
+    ret, binary_image = cv2.threshold(blurred_image, 150, 255, cv2.THRESH_BINARY_INV)
+    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (6,6))
+    mask = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, kernel)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6,6))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.resize(mask, (1440, 720))
+    cv2.imshow('Localized Image with New Bounding Boxes', mask) #uncomment to show the image
+    cv2.waitKey(0) 
+    cv2.destroyAllWindows()
+    return binary_image , mask
 
 def masked_iamge(image_path):
     img = cv2.imread(image_path)
@@ -28,23 +36,26 @@ def masked_iamge(image_path):
         x,y,w,h = cv2.boundingRect(cntr)
         cv2.rectangle(bboxes_img, (x, y), (x+w, y+h), (0,0,255), 1)
         bboxes.append((x,y,w,h))
+    #resized_image = cv2.resize(mask, (1440, 720))
     #cv2.imshow('Localized Image with New Bounding Boxes', bboxes_img) #uncomment to show the image
     #cv2.waitKey(0) 
     #cv2.destroyAllWindows()
     return bboxes_img
 
-def localize_text(binary_image):
-    contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+def localize_text(binary_image,mask):
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     localized_image = cv2.cvtColor(binary_image, cv2.COLOR_GRAY2BGR)
     bounding_boxes = []
     
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
         if w * h > 100:
-            cv2.rectangle(localized_image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv2.rectangle(localized_image, (x, y-5), (x+w, y+h+5), (0, 255, 0), 2)
             bounding_boxes.append((x, y, w, h))
-    
-    localized_image = cv2.resize(localized_image, (1920, 1080))
+    #localized_image = cv2.resize(localized_image, (1440, 720))
+    #cv2.imshow('Localized Image with New Bounding Boxes', localized_image) #uncomment to show the image
+    #cv2.waitKey(0) 
+    #cv2.destroyAllWindows()
     return localized_image, bounding_boxes
 
 def segment_text(image, bounding_boxes):
@@ -74,8 +85,8 @@ def segment_text(image, bounding_boxes):
     return segmented_text, new_bounding_boxes
 onlyfiles = [f for f in listdir(binpath) if isfile(join(binpath, f))]
 for file in onlyfiles:
-    binary_image = preprocess_image(os.path.join("image-data" , file))
-    localized_image, bounding_boxes = localize_text(binary_image)
+    binary_image , mask = preprocess_image(os.path.join("image-data" , file))
+    localized_image, bounding_boxes = localize_text(binary_image,mask)
     segmented_text, new_bounding_boxes = segment_text(binary_image, bounding_boxes)
 
     #cv2.imshow('Localized Image with New Bounding Boxes', localized_image) #uncomment to show the image
